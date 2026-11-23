@@ -1,1 +1,65 @@
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+import java.util.ArrayDeque;
+import java.util.Deque;
 
+class Solution {
+    private static class IndexedNode {
+        final TreeNode node;
+        final long index;
+
+        IndexedNode(TreeNode node, long index) {
+            this.node = node;
+            this.index = index;
+        }
+    }
+
+    public int widthOfBinaryTree(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+
+        Deque<IndexedNode> queue = new ArrayDeque<>();
+        queue.offer(new IndexedNode(root, 0L));
+        int maxWidth = 0;
+
+        while (!queue.isEmpty()) {
+            int levelSize = queue.size();
+            long levelStart = queue.peekFirst().index;
+            long levelEnd = levelStart;
+
+            for (int i = 0; i < levelSize; i++) {
+                IndexedNode current = queue.pollFirst();
+                long idx = current.index - levelStart; // normalize to prevent overflow
+                levelEnd = current.index;
+
+                if (current.node.left != null) {
+                    queue.offerLast(new IndexedNode(current.node.left, 2 * idx));
+                }
+                if (current.node.right != null) {
+                    queue.offerLast(new IndexedNode(current.node.right, 2 * idx + 1));
+                }
+            }
+
+            int width = (int) (levelEnd - levelStart + 1);
+            if (width > maxWidth) {
+                maxWidth = width;
+            }
+        }
+
+        return maxWidth;
+    }
+}
