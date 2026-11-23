@@ -1,0 +1,65 @@
+class InvalidAtoiInputException extends Exception {
+    public InvalidAtoiInputException(String message) {
+        super(message);
+    }
+}
+
+class Solution {
+    public int myAtoi(String s) {
+        try {
+            if (s == null) {
+                throw new InvalidAtoiInputException("Input string cannot be null.");
+            }
+
+            int n = s.length();
+            int i = 0;
+
+            while (i < n && s.charAt(i) == ' ') {
+                i++;
+            }
+
+            if (i == n) {
+                return 0;
+            }
+
+            int sign = 1;
+            if (s.charAt(i) == '+' || s.charAt(i) == '-') {
+                sign = (s.charAt(i) == '-') ? -1 : 1;
+                i++;
+            }
+
+            int result = 0;
+            while (i < n && Character.isDigit(s.charAt(i))) {
+                int digit = s.charAt(i) - '0';
+
+                // Check before multiplying by 10 to prevent 32-bit signed overflow
+                if (result > Integer.MAX_VALUE / 10 ||
+                        (result == Integer.MAX_VALUE / 10 && digit > 7)) {
+                    throw new NumberFormatException("32-bit signed integer overflow");
+                }
+
+                result = result * 10 + digit;
+                i++;
+            }
+
+            return result * sign;
+        } catch (NumberFormatException ex) {
+            return isNegativeLead(s) ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        } catch (InvalidAtoiInputException ex) {
+            return 0;
+        } finally {
+            // Executes regardless of normal return, exception, or clamping
+        }
+    }
+
+    private boolean isNegativeLead(String s) {
+        if (s == null) {
+            return false;
+        }
+        int i = 0;
+        while (i < s.length() && s.charAt(i) == ' ') {
+            i++;
+        }
+        return i < s.length() && s.charAt(i) == '-';
+    }
+}
