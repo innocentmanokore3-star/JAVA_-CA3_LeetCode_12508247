@@ -1,0 +1,58 @@
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+interface QueueADT<T> {
+    void push(T x);
+    T pop();
+    T peek();
+    boolean empty();
+}
+
+class MyQueue implements QueueADT<Integer> {
+    // Composition: MyQueue "has-a" input stack and output stack
+    private final Deque<Integer> inStack;
+    private final Deque<Integer> outStack;
+
+    public MyQueue() {
+        this.inStack = new ArrayDeque<>();
+        this.outStack = new ArrayDeque<>();
+    }
+
+    @Override
+    public void push(Integer x) {
+        inStack.push(x);
+    }
+
+    @Override
+    public Integer pop() {
+        shiftStacks();
+        return outStack.pop();
+    }
+
+    @Override
+    public Integer peek() {
+        shiftStacks();
+        return outStack.peek();
+    }
+
+    @Override
+    public boolean empty() {
+        return inStack.isEmpty() && outStack.isEmpty();
+    }
+
+    private void shiftStacks() {
+        if (outStack.isEmpty()) {
+            while (!inStack.isEmpty()) {
+                outStack.push(inStack.pop());
+            }
+        }
+    }
+}
+/**
+ * Your MyQueue object will be instantiated and called as such:
+ * MyQueue obj = new MyQueue();
+ * obj.push(x);
+ * int param_2 = obj.pop();
+ * int param_3 = obj.peek();
+ * boolean param_4 = obj.empty();
+ */
