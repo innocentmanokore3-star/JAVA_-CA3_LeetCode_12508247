@@ -1,0 +1,102 @@
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+
+interface CachePolicy<K, V> {
+    V get(K key);
+    void put(K key, V value);
+}
+
+class LFUCache implements CachePolicy<Integer, Integer> {
+    // Static nested class: groups entry fields without needing an enclosing instance reference
+    private static final class CacheEntry {
+        final int key;
+        int value;
+        int freq;
+
+        CacheEntry(int key, int value, int freq) {
+            this.key = key;
+            this.value = value;
+            this.freq = freq;
+        }
+    }
+
+    // Composition: LFUCache holds key-to-entry and frequency-to-LRU-keys maps
+    private final int capacity;
+    private final Map<Integer, CacheEntry> keyToEntry;
+    private final Map<Integer, LinkedHashSet<Integer>> freqToKeys;
+    private int minFreq;
+
+    public LFUCache(int capacity) {
+        this.capacity = capacity;
+        this.keyToEntry = new HashMap<>();
+        this.freqToKeys = new HashMap<>();
+        this.minFreq = 0;
+    }
+
+    @Override
+    public Integer get(Integer key) {
+        if (key == null) {
+            return -1;
+        }
+        CacheEntry entry = keyToEntry.get(key);
+        if (entry == null) {
+            return -1;
+        }
+        touch(entry);
+        return entry.value;
+    }
+
+    @Override
+    public void put(Integer key, Integer value) {
+        if (key == null || value == null || capacity == 0) {
+            return;
+        }
+
+        CacheEntry existing = keyToEntry.get(key);
+        if (existing != null) {
+            existing.value = value;
+            touch(existing);
+            return;
+        }
+
+        if (keyToEntry.size() >= capacity) {
+            evictLeastFrequent();
+        }
+
+        CacheEntry created = new CacheEntry(key, value, 1);
+        keyToEntry.put(key, created);
+        freqToKeys.computeIfAbsent(1, k -> new LinkedHashSet<>()).add(key);
+        minFreq = 1;
+    }
+
+    private void touch(CacheEntry entry) {
+        int oldFreq = entry.freq;
+        LinkedHashSet<Integer> oldBucket = freqToKeys.get(oldFreq);
+        oldBucket.remove(entry.key);
+
+        if (oldBucket.isEmpty()) {
+            freqToKeys.remove(oldFreq);
+            if (minFreq == oldFreq) {
+                minFreq++;
+            }
+        }
+
+        entry.freq = oldFreq + 1;
+        freqToKeys.computeIfAbsent(entry.freq, k -> new LinkedHashSet<>()).add(entry.key);
+    }
+
+    private void evictLeastFrequent() {
+        LinkedHashSet<Integer> minBucket = freqToKeys.get(minFreq);
+        if (minBucket == null || minBucket.isEmpty()) {
+            return;
+        }
+        // First element in LinkedHashSet is the least recently used within minFreq
+        Integer evictKey = minBucket.iterator().next();
+        minBucket.remove(evictKey);
+        if (minBucket.isEmpty()) {
+            freqToKeys.remove(minFreq);
+        }
+        keyToEntry.remove(evictKey);
+    }
+}
